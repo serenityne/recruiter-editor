@@ -1,11 +1,10 @@
 import streamlit as st
-import psycopg2
+import psycopg
 import json
 
-
-conn = psycopg2.connect(
+conn = psycopg.connect(
     host=st.secrets["postgres"]["host"],
-    database=st.secrets["postgres"]["database"],
+    dbname=st.secrets["postgres"]["database"],
     user=st.secrets["postgres"]["user"],
     password=st.secrets["postgres"]["password"],
     port=st.secrets["postgres"]["port"],
