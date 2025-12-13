@@ -2,36 +2,53 @@ import streamlit as st
 import json
 from st_supabase_connection import SupabaseConnection
 
+FOUNDER_NAME = "Naimul"
+
 conn = st.connection("supabase", type=SupabaseConnection)
 
 st.title("recruiter tree editor")
 
-# load members
-resp = conn.table("members").select("id,name,recruited_by").order("name").execute()
+# always fetch fresh data
+resp = conn.table("members").select(
+    "id,name,recruited_by"
+).order("name").execute(ttl=0)
+
 rows = resp.data
 
-# split assigned / unassigned
-unassigned = [r for r in rows if r["recruited_by"] is None]
-assigned_count = len(rows) - len(unassigned)
-total = len(rows)
+# build lookup
+id_by_name = {r["name"]: r["id"] for r in rows}
 
-# progress bar
-st.progress(assigned_count / total)
+# force founder rule (one-time safety)
+founder = next(r for r in rows if r["name"] == FOUNDER_NAME)
+if founder["recruited_by"] is not None:
+    conn.table("members").update(
+        {"recruited_by": None}
+    ).eq("id", founder["id"]).execute()
+
+# exclude founder from assignment flow
+assignable = [r for r in rows if r["name"] != FOUNDER_NAME]
+
+unassigned = [r for r in assignable if r["recruited_by"] is None]
+assigned_count = len(assignable) - len(unassigned)
+total = len(assignable)
+
+# progress
+st.progress(assigned_count / total if total else 1)
 st.caption(f"{assigned_count} / {total} recruiters assigned")
 
 if not unassigned:
     st.success("all members have recruiters assigned 🎉")
     st.stop()
 
-# build lookup tables
-id_by_name = {r["name"]: r["id"] for r in rows}
-names = [r["name"] for r in rows]
-choices = ["None (Founder)"] + names
-
-# current target (always first unassigned)
+# current target
 current = unassigned[0]
 mid = current["id"]
 name = current["name"]
+
+# dropdown choices (founder allowed only as recruiter)
+choices = [FOUNDER_NAME] + [
+    r["name"] for r in rows if r["name"] != name
+]
 
 st.markdown(f"## who recruited **{name}**?")
 
@@ -46,13 +63,12 @@ col1, col2 = st.columns([1, 3])
 
 with col1:
     if st.button("save & next"):
-        parent_id = None if selected.startswith("None") else id_by_name[selected]
+        parent_id = id_by_name[selected]
 
         conn.table("members").update(
             {"recruited_by": parent_id}
         ).eq("id", mid).execute()
 
-        # clear selection and move on
         st.session_state.pop("recruiter_select", None)
         st.rerun()
 
