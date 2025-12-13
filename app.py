@@ -3,27 +3,33 @@ from st_supabase_connection import SupabaseConnection
 
 FOUNDER_NAME = "Naimul"
 
-st.set_page_config(page_title="recruiter editor", layout="wide")
+st.set_page_config(
+    page_title="recruiter editor",
+    layout="wide"
+)
 
+# supabase connection
 conn = st.connection("supabase", type=SupabaseConnection)
 
 st.title("recruiter tree editor")
 
-# ----------------------------
+# =========================================================
 # load members (fresh every run)
-# ----------------------------
+# =========================================================
 resp = conn.table("members").select(
     "id,name,recruited_by,pfp_url"
 ).order("name").execute()
 
 rows = resp.data
 
+# lookup maps
 id_by_name = {r["name"]: r["id"] for r in rows}
 id_to_name = {r["id"]: r["name"] for r in rows}
+names = [r["name"] for r in rows]
 
-# ----------------------------
+# =========================================================
 # tabs
-# ----------------------------
+# =========================================================
 tab_assign, tab_manage = st.tabs([
     "assign recruiters",
     "add / edit members"
@@ -79,20 +85,29 @@ with tab_assign:
 
             st.rerun()
 
-    # -------- read-only table --------
+    # -------------------------
+    # read-only table
+    # -------------------------
     st.divider()
     st.subheader("full members table (read-only)")
 
-    table = []
+    table_rows = []
     for r in rows:
-        table.append({
+        table_rows.append({
             "name": r["name"],
             "recruited_by": (
-                id_to_name.get(r["recruited_by"], f"{FOUNDER_NAME} (Founder)")
+                id_to_name.get(
+                    r["recruited_by"],
+                    f"{FOUNDER_NAME} (Founder)"
+                )
             )
         })
 
-    st.dataframe(table, use_container_width=True, hide_index=True)
+    st.dataframe(
+        table_rows,
+        use_container_width=True,
+        hide_index=True
+    )
 
 # =========================================================
 # TAB 2 — ADD / EDIT MEMBERS
@@ -113,7 +128,7 @@ with tab_manage:
     if recruiter_mode == "select existing":
         recruiter = st.selectbox(
             "recruited by",
-            [FOUNDER_NAME] + [r["name"] for r in rows]
+            [FOUNDER_NAME] + names
         )
         recruiter_id = id_by_name[recruiter]
 
