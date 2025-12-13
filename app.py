@@ -11,7 +11,7 @@ st.title("recruiter tree editor")
 # always fetch fresh data
 resp = conn.table("members").select(
     "id,name,recruited_by"
-).order("name").execute(ttl=0)
+).order("name").execute()
 
 rows = resp.data
 
