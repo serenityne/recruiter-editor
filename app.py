@@ -4,12 +4,14 @@ import json
 
 
 conn = psycopg2.connect(
-    host="localhost",
-    database="clan",
-    user="postgres",
-    password="yourpassword",
-    port=5432
+    host=st.secrets["postgres"]["host"],
+    database=st.secrets["postgres"]["database"],
+    user=st.secrets["postgres"]["user"],
+    password=st.secrets["postgres"]["password"],
+    port=st.secrets["postgres"]["port"],
+    sslmode="require"
 )
+
 cur = conn.cursor()
 
 cur.execute("SELECT id, name FROM members ORDER BY name")
