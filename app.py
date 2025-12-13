@@ -1,20 +1,21 @@
+import os
 import streamlit as st
 import psycopg
 import json
 
-
-st.write("postgres secrets:", st.secrets["postgres"])
-
+# 🔥 nuke Streamlit-injected PG env vars
+for k in list(os.environ.keys()):
+    if k.startswith("PG"):
+        del os.environ[k]
 
 conn = psycopg.connect(
     host=st.secrets["postgres"]["host"],
     dbname=st.secrets["postgres"]["database"],
-    user=st.secrets["postgres"]["user"],
+    user=st.secrets["postgres"]["user"],  # postgres.<project_ref>
     password=st.secrets["postgres"]["password"],
-    port=st.secrets["postgres"]["port"],
+    port=st.secrets["postgres"]["port"],  # 6543
     sslmode="require",
 )
-
 
 
 cur.execute("SELECT id, name FROM members ORDER BY name")
