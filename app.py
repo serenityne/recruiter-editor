@@ -2,22 +2,19 @@ import streamlit as st
 import psycopg
 import json
 
-import streamlit as st
-import psycopg
 
 st.write("postgres secrets:", st.secrets["postgres"])
 
-dsn = (
-    f"postgresql://"
-    f"{st.secrets['postgres']['user']}:"
-    f"{st.secrets['postgres']['password']}@"
-    f"{st.secrets['postgres']['host']}:"
-    f"{st.secrets['postgres']['port']}/"
-    f"{st.secrets['postgres']['database']}?"
-    f"sslmode=require"
+
+conn = psycopg.connect(
+    host=st.secrets["postgres"]["host"],
+    dbname=st.secrets["postgres"]["database"],
+    user=st.secrets["postgres"]["user"],
+    password=st.secrets["postgres"]["password"],
+    port=st.secrets["postgres"]["port"],
+    sslmode="require",
 )
 
-conn = psycopg.connect(dsn)
 
 
 cur.execute("SELECT id, name FROM members ORDER BY name")
