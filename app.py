@@ -2,16 +2,27 @@ import streamlit as st
 import psycopg
 import json
 
-conn = psycopg.connect(
-    host=st.secrets["postgres"]["host"],
-    dbname=st.secrets["postgres"]["database"],
-    user=st.secrets["postgres"]["user"],
-    password=st.secrets["postgres"]["password"],
-    port=st.secrets["postgres"]["port"],
-    sslmode="require"
-)
+import streamlit as st
+import psycopg
 
-cur = conn.cursor()
+st.write("postgres secrets:", st.secrets["postgres"])
+
+try:
+    conn = psycopg.connect(
+        host=st.secrets["postgres"]["host"],
+        dbname=st.secrets["postgres"]["database"],
+        user=st.secrets["postgres"]["user"],
+        password=st.secrets["postgres"]["password"],
+        port=st.secrets["postgres"]["port"],
+        sslmode="require",
+        connect_timeout=10,
+    )
+    st.success("connected to postgres")
+except Exception as e:
+    st.error("connection failed")
+    st.exception(e)
+    st.stop()
+
 
 cur.execute("SELECT id, name FROM members ORDER BY name")
 rows = cur.fetchall()
