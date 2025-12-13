@@ -1,21 +1,10 @@
 import os
 import streamlit as st
-import psycopg
 import json
+from st_supabase_connection import SupabaseConnection
 
-# remove PG env vars (safe)
-for k in list(os.environ.keys()):
-    if k.startswith("PG"):
-        del os.environ[k]
+conn = st.connection("supabase", type=SupabaseConnection)
 
-conn = psycopg.connect(
-    host=st.secrets["postgres"]["host"],
-    dbname=st.secrets["postgres"]["database"],
-    user=st.secrets["postgres"]["user"],
-    password=st.secrets["postgres"]["password"],
-    port=st.secrets["postgres"]["port"],
-    sslmode="require",
-)
 
 cur = conn.cursor()
 
