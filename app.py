@@ -1,5 +1,6 @@
 import streamlit as st
 from st_supabase_connection import SupabaseConnection
+from contextlib import contextmanager
 
 FOUNDER_NAME = "Naimul"
 
@@ -25,6 +26,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+@contextmanager
 def panel(title=None):
     st.markdown('<div class="panel">', unsafe_allow_html=True)
     if title:
