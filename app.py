@@ -1,6 +1,7 @@
 import streamlit as st
 from st_supabase_connection import SupabaseConnection
 from contextlib import contextmanager
+import base64
 
 FOUNDER_NAME = "Naimul"
 
@@ -9,35 +10,64 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---------- styling ----------
-st.markdown("""
-<style>
-.panel {
-    background:#0e1117;
-    border:1px solid #30363d;
-    border-radius:12px;
-    padding:16px;
-    margin-bottom:20px;
-}
-.muted {
-    opacity:0.6;
-    font-size:0.9rem;
-}
-</style>
-""", unsafe_allow_html=True)
+# ===============================
+# background image (local)
+# ===============================
+def load_bg(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+bg = load_bg("assets/bg.jpg")
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background:
+          linear-gradient(
+            rgba(14,17,23,0.85),
+            rgba(14,17,23,0.85)
+          ),
+          url("data:image/jpg;base64,{bg}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+
+    .panel {{
+        background: rgba(14,17,23,0.92);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 24px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+    }}
+
+    .muted {{
+        opacity: 0.6;
+        font-size: 0.9rem;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 @contextmanager
 def panel(title=None):
     st.markdown('<div class="panel">', unsafe_allow_html=True)
     if title:
         st.markdown(f"### {title}")
-    yield
-    st.markdown("</div>", unsafe_allow_html=True)
+    try:
+        yield
+    finally:
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------- db ----------
+# ===============================
+# database
+# ===============================
 conn = st.connection("supabase", type=SupabaseConnection)
 
-# always fresh (important for multi-user)
 resp = (
     conn.table("members")
     .select("id,name,recruited_by")
@@ -54,18 +84,19 @@ if not rows:
 id_by_name = {r["name"]: r["id"] for r in rows}
 id_to_name = {r["id"]: r["name"] for r in rows}
 
-# ---------- header ----------
+# ===============================
+# header
+# ===============================
 st.markdown("""
-<h1 style="margin-bottom:0;">recruiter tree editor</h1>
+<h1 style="margin-bottom:10px;">recruiter tree editor</h1>
 """, unsafe_allow_html=True)
-
 
 tab_assign, tab_edit, tab_add = st.tabs(
     ["assign recruiters", "edit members", "add member"]
 )
 
 # =====================================================
-# ASSIGN RECRUITERS (editor flow)
+# ASSIGN RECRUITERS
 # =====================================================
 with tab_assign:
     with panel("assignment"):
@@ -86,7 +117,7 @@ with tab_assign:
         st.caption(f"{assigned} / {total} assigned")
 
         if not unassigned:
-            st.success("all members assigned 🎉")
+            st.success("all members assigned")
         else:
             current = unassigned[0]
             mid = current["id"]
@@ -108,13 +139,12 @@ with tab_assign:
                 "recruiter",
                 choices,
                 label_visibility="collapsed",
-                key="assign_select",
+                key="assign_select"
             )
 
             if st.button("save & next", use_container_width=True):
                 parent_id = id_by_name[selected]
 
-                # concurrency-safe update
                 res = (
                     conn.table("members")
                     .update({"recruited_by": parent_id})
@@ -154,7 +184,7 @@ with tab_edit:
     with panel("edit member"):
         member_name = st.selectbox(
             "member",
-            [r["name"] for r in rows],
+            [r["name"] for r in rows]
         )
 
         member = next(
