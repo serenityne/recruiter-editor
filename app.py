@@ -150,7 +150,7 @@ with tab_assign:
             "recruiter",
             choices,
             label_visibility="collapsed",
-            key="assign_select"
+            key=f"assign_select_{mid}"
         )
 
         if st.button("save & next", use_container_width=True):
