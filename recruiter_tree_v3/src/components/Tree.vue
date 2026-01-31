@@ -1,12 +1,20 @@
 <template>
+    <RecruiterCard
+        v-if="selectedNode"
+        :recruiter="selectedNode"
+        :data="recruiterData"
+        @close="selectedNode = null"
+    />
     <canvas ref="canvas"></canvas>
 </template>
 
 <script setup>
 import * as d3 from 'd3';
 import { onMounted, ref, watch, defineProps } from 'vue';
-import { getRecruiters } from '../db/database';
+import { getRecruiters, getRecruiterData } from '../db/database';
 import { formattedHierarchical } from '@/lib/formatData';
+import RecruiterCard from './RecruiterCard.vue';
+const isOpen = ref(false);
 
 const props = defineProps({
     width: {
@@ -25,6 +33,9 @@ const canvas = ref(null);
 let root = null;
 let ctx;
 let transform = d3.zoomIdentity;
+let selectedNode = ref(null);
+let recruiterData = ref(null);
+const cache = new Map();
 
 const zoom = d3.zoom()
     .scaleExtent([0.5, 5])
@@ -93,6 +104,25 @@ const draw = () => {
     ctx.restore();
 }
 
+function canvasCard() {
+    canvas.value.addEventListener('click', (e) => {
+        const rect = canvas.value.getBoundingClientRect();
+        const x = (e.clientX - rect.left - transform.x - props.width / 2) / transform.k;
+        const y = (e.clientY - rect.top - transform.y - 40) / transform.k;
+        const radius = 24;
+    
+        const clickedNode = root.descendants()
+            .find(d => Math.hypot(d.x - x, d.y - y) < radius);
+    
+        if (clickedNode) {
+            selectedNode.value = clickedNode.data;
+            isOpen.value = true;
+        }
+        console.log(getRecruiterData(selectedNode.id))
+        console.log(recruiterData)
+    });
+}
+
 onMounted(async () => {
     data.value = await formattedHierarchical(false);
 
@@ -100,6 +130,24 @@ onMounted(async () => {
     canvas.value.width = props.width;
     canvas.value.height = props.height;
     drawTree();
+    canvasCard();
+});
+
+watch(selectedNode, async (node) => {
+    if (!node) return;
+
+    if (cache.has(node.id)) {
+        recruiterData.value = cache.get(node.id);
+        return;
+    }
+
+    const data = await getRecruiterData(node.id);
+    cache.set(node.id, data);
+    recruiterData.value = data;
+});
+
+window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') selectedNode.value = null;
 });
 
 </script>
